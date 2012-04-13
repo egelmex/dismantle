@@ -17,8 +17,8 @@
 #ifndef __DM_ELF_H
 #define __DM_ELF_H
 
-#include <libelf/gelf.h>
-#include <libelf/libelf.h>
+#include <gelf.h>
+#include <libelf.h>
 
 #include "queue.h"
 #include "common.h"

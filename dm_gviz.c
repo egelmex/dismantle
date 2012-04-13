@@ -47,8 +47,8 @@ void dm_colour_label(FILE *fp, char *node, char* colour)
 void dm_end_graph(FILE *fp)
 {
 	fprintf(fp, "}\n");
-	fclose(fp);
 	fsync(fileno(fp));
+	fclose(fp);
 }
 
 void

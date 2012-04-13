@@ -20,14 +20,11 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "common.h"
-#include "dm_dis.h"
-#include "dm_elf.h"
-#include "dm_cfg.h"
-#include "dm_dom.h"
-#include "dm_ssa.h"
-#include "dm_dwarf.h"
-#include "dm_util.h"
+#ifdef DM_CLOSED
+	#include "dm_closed.h"
+#else
+	#include "dm_open.h"
+#endif
 
 uint8_t				 colours_on = 1;
 
@@ -53,82 +50,13 @@ char *banner =
 int				 dm_debug = DM_D_WARN;
 struct dm_file_info		file_info;
 
-int	dm_cmd_help();
 void	dm_parse_cmd(char *line);
 void	dm_update_prompt();
 void	dm_interp();
 int	dm_dump_hex_pretty(uint8_t *buf, size_t sz, NADDR start_addr);
 int	dm_dump_hex(size_t bytes);
-int	dm_cmd_hex(char **args);
-int	dm_cmd_hex_noargs(char **args);
-int	dm_cmd_findstr(char **args);
-int	dm_cmd_info(char **args);
-int	dm_cmd_debug(char **args);
-int	dm_cmd_debug_noargs(char **args);
-int	dm_cmd_ansii_noargs(char **args);
-int	dm_cmd_ansii(char **args);
-int	dm_cmd_set_noargs(char **args);
-int	dm_cmd_set_one_arg(char **args);
-int	dm_cmd_set_two_args(char **args);
 int	dm_settings_init();
 int	dm_clean_settings();
-
-struct dm_cmd_sw {
-	char			*cmd;
-	uint8_t			 args;
-	int			(*handler)(char **args);
-} dm_cmds[] = {
-	{"ansii", 0, dm_cmd_ansii_noargs}, {"ansii", 1, dm_cmd_ansii},
-	{"bits", 0, dm_cmd_bits_noargs},
-	{"bits", 1, dm_cmd_bits},
-	{"cfg", 0, dm_cmd_cfg},
-	{"debug", 0, dm_cmd_debug_noargs},
-	{"debug", 1, dm_cmd_debug},
-	{"dis", 0, dm_cmd_dis_noargs},	{"pd", 0, dm_cmd_dis_noargs},
-	{"dis", 1, dm_cmd_dis},		{"pd", 1, dm_cmd_dis},
-	{"dom", 0, dm_cmd_dom},
-	{"disf", 0, dm_cmd_dis_func},	{"pdf", 0, dm_cmd_dis_func},
-	{"findstr", 1, dm_cmd_findstr}, {"/", 1, dm_cmd_findstr},
-	{"funcs", 0, dm_cmd_dwarf_funcs}, {"f", 0, dm_cmd_dwarf_funcs},
-	{"help", 0, dm_cmd_help},	{"?", 0, dm_cmd_help},
-	{"hex", 0, dm_cmd_hex_noargs},  {"px", 0, dm_cmd_hex_noargs},
-	{"hex", 1, dm_cmd_hex},         {"px", 1, dm_cmd_hex},
-	{"info", 0, dm_cmd_info},	{"i", 0, dm_cmd_info},
-	{"offset", 1, dm_cmd_offset},
-	{"pht", 0, dm_cmd_pht},
-	{"set", 0, dm_cmd_set_noargs},
-	{"set", 1, dm_cmd_set_one_arg},
-	{"set", 2, dm_cmd_set_two_args},
-	{"seek", 1, dm_cmd_seek},	{"s", 1, dm_cmd_seek},
-	{"sht", 0, dm_cmd_sht},
-	{"ssa", 0, dm_cmd_ssa},
-	{NULL, 0, NULL}
-};
-
-struct dm_help_rec {
-	char		*cmd;
-	char		*descr;
-} help_recs[] = {
-	{"  / str",		"Find ASCII string from current pos"},
-	{"  CTRL+D",		"Exit"},
-	{"  ansii",		"Get/set ANSII colours setting"},
-	{"  bits [set_to]",	"Get/set architecture (32 or 64)"},
-	{"  cfg",		"Show static CFG for current function"},
-	{"  debug [level]",	"Get/set debug level (0-3)"},
-	{"  dis/pd [ops]",	"Disassemble (8 or 'ops' operations)"},
-	{"  disf/pdf",		"Disassemble function (up until the next RET)"},
-	{"  dom",		"Show dominance tree and frontiers of cur func"},
-	{"  funcs/f",		"Show functions from dwarf data"},
-	{"  help/?",		"Show this help"},
-	{"  hex/px [len]",	"Dump hex (64 or 'len' bytes)"},
-	{"  info/i",		"Show file information"},
-	{"  pht",		"Show program header table"},
-	{"  set [var] [val]",	"Show/ammend settings"},
-	{"  seek/s addr",	"Seek to an address"},
-	{"  sht",		"Show section header table"},
-	{"  ssa",		"Output SSA form"},
-	{NULL, 0},
-};
 
 #define DM_MAX_PROMPT			32
 char			prompt[DM_MAX_PROMPT];

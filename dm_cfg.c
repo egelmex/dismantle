@@ -19,6 +19,7 @@
 #include "dm_cfg.h"
 #include "dm_gviz.h"
 #include "dm_dwarf.h"
+#include "dm_util.h"
 
 /* Head of the list and a list iterator */
 struct ptrs	*p_head = NULL;
@@ -54,7 +55,7 @@ dm_cmd_cfg(char **args) {
 	dm_graph_cfg();
 
 	/* Print CFG */
-	dm_print_cfg(cfg);
+	/*dm_print_cfg(cfg);*/
 
 	/* Check CFG for consistency! */
 	dm_check_cfg_consistency();
@@ -292,6 +293,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node)
 			free(node->children);
 			node->children = calloc(2, sizeof(void*));
 			node->children[0] = foundNode;
+			node->c_count = 1;
 			dm_add_parent(foundNode, node);
 			break;
 		}
@@ -321,6 +323,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node)
 			/* Make space for the children of this block */
 			node->children = calloc(instructions[ud.mnemonic].jump
 			    + 1, sizeof(void*));
+			node->c_count = instructions[ud.mnemonic].jump;
 
 			/* Check if we are jumping to the start of an already
 			 * existing block, if so use that as child of current
@@ -360,7 +363,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node)
 				dm_gen_cfg_block(node->children[0]);
 			}
 			/* This target is outside of the binary. Just make a
-			 * basic block for it with and continue with a new
+			 * basic block for it and continue with a new
 			 * block from the next insn */
 			if (!local_target) {
 				if ((foundNode = dm_find_cfg_node_starting(target)) != NULL) {
@@ -370,21 +373,21 @@ dm_gen_cfg_block(struct dm_cfg_node *node)
 				else {
 					/* New block starts and ends at target addr */
 					node->children[0] = dm_new_cfg_node(target, target);
-					dm_add_parent(node->children[0], node);
-					node->children[0]->nonlocal = 1;
+					foundNode = node->children[0];
+					dm_add_parent(foundNode, node);
+					foundNode->nonlocal = 1;
 				}
 
 				/* New node has child starting at next insn */
 				dm_seek(addr);
 				read = ud_disassemble(&ud);
 
-				node->children[0]->children =
-				    realloc(node->children[0]->children, (1 + ++(node->children[0]->c_count))*sizeof(void*));
-				node->children[0]->children[node->children[0]->c_count-1] =
-				    dm_new_cfg_node(ud.pc, 0);
-				node->children[0]->children[node->children[0]->c_count] = NULL;
-				dm_add_parent(node->children[0]->children[node->children[0]->c_count-1], node->children[0]);
-				dm_gen_cfg_block(node->children[0]->children[node->children[0]->c_count-1]);
+				foundNode->children =
+				    xrealloc(foundNode->children, (1 + ++(foundNode->c_count))*sizeof(void*));
+				foundNode->children[foundNode->c_count-1] = dm_new_cfg_node(ud.pc, 0);
+				foundNode->children[foundNode->c_count] = NULL;
+				dm_add_parent(foundNode->children[foundNode->c_count-1], foundNode);
+				dm_gen_cfg_block(foundNode->children[foundNode->c_count-1]);
 			}
 			else {
 				/* Seek back to before we followed the jump */
@@ -398,6 +401,11 @@ dm_gen_cfg_block(struct dm_cfg_node *node)
 				 * from */
 				foundNode = dm_find_cfg_node_ending(addr);
 				if (foundNode != NULL) {
+					if (instructions[ud.mnemonic].jump > 1) {
+						node->children = realloc(node->children, 2*sizeof(void*));
+						node->children[1] = NULL;
+						node->c_count = 1;
+					}
 					node = foundNode;
 				}
 			}
@@ -464,6 +472,7 @@ dm_split_cfg_block(struct dm_cfg_node *node, NADDR addr)
 
 	/* Tail node must pick up original nodes children */
 	tail->children = node->children;
+	tail->c_count = node->c_count;
 
 	/* First parent of tail node is the head node */
 	dm_add_parent(tail, node);
@@ -477,6 +486,7 @@ dm_split_cfg_block(struct dm_cfg_node *node, NADDR addr)
 	/* Head has only one child - the tail node */
 	node->children = calloc(2, sizeof(void*));
 	node->children[0] = tail;
+	node->c_count = 1;
 
 	/* We must find all children of the original node and change the
 	 * parents entry that pointed to the original node to point to the
@@ -627,7 +637,8 @@ dm_dfw(struct dm_cfg_node *node)
 	int c = 0;
 	node->visited = 1;
 	node->pre = i++;
-	for (;node->children[c] != NULL; c++)
+	//for (;node->children[c] != NULL; c++)
+	for (;c < node->c_count; c++)
 		if (!node->children[c]->visited)
 			dm_dfw(node->children[c]);
 	rpost[j] = node;
