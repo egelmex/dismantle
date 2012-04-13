@@ -27,10 +27,10 @@ static: ${DISMANTLE_DEPS}
 		    dm_ssa.o dm_dwarf.o dm_util.o /usr/lib/libdwarf.a \
 		    /usr/lib/libelf.a /usr/lib/libreadline.a -lncurses ${UDIS86_ARCHIVE} ${CLOSED}
 
-dismantle-closed: CC += -DDM_CLOSED
-dismantle-closed: CLOSED = dm_tc.o
-dismantle-closed: DISMANTLE_DEPS += dm_closed.h dm_tc.o
-dismantle-closed: dm_tc.o dismantle
+closed: CC += -DDM_CLOSED
+closed: CLOSED = dm_tc.o dm_tr.o
+closed: DISMANTLE_DEPS += dm_closed.h dm_tc.o dm_tr.o
+closed: dm_tc.o dm_tr.o dismantle
 
 static-closed: CC += -DDM_CLOSED
 static-closed: CLOSED =	dm_tc.o dm_tr.o
