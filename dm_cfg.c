@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Ed Robbins <edd.robbins@gmail.com>
+ * Copyright (c) 2011, Ed Robbins <static.void01@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -91,6 +91,7 @@ dm_recover_cfg() {
 	return cfg;
 }
 
+/* Check all children have links to parents and vice-versa */
 void
 dm_check_cfg_consistency()
 {
@@ -269,6 +270,7 @@ dm_add_parent(struct dm_cfg_node *node, struct dm_cfg_node *parent)
 
 /*
  * Main part of CFG recovery. Recursively find blocks.
+ * Very messy. Fix! XXX
  */
 struct dm_cfg_node *
 dm_gen_cfg_block(struct dm_cfg_node *node)
@@ -439,6 +441,9 @@ dm_gen_cfg_block(struct dm_cfg_node *node)
 	return node;
 }
 
+/* 
+ * Check a jump target is in the .text section
+ */
 int
 dm_is_target_in_text(NADDR addr)
 {
@@ -458,6 +463,9 @@ dm_is_target_in_text(NADDR addr)
 	return (1);
 }
 
+/* 
+ * Split a CFG node at addr, creating a new node, and rejoin all edges 
+ */
 struct dm_cfg_node *
 dm_split_cfg_block(struct dm_cfg_node *node, NADDR addr)
 {
@@ -637,7 +645,6 @@ dm_dfw(struct dm_cfg_node *node)
 	int c = 0;
 	node->visited = 1;
 	node->pre = i++;
-	//for (;node->children[c] != NULL; c++)
 	for (;c < node->c_count; c++)
 		if (!node->children[c]->visited)
 			dm_dfw(node->children[c]);
@@ -656,6 +663,9 @@ dm_get_unvisited_node()
         return NULL;
 }
 
+/*
+ * Graph the CFG using gviz
+ */
 void
 dm_graph_cfg()
 {
