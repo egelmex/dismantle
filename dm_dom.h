@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Ed Robbins <static.void01@gmail.com>
+ * Copyright (c) 2011, Ed Robbins <edd.robbins@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,8 +21,7 @@
 #include "dm_cfg.h"
 
 int			dm_cmd_dom(char **args);
-struct dm_cfg_node*	dm_intersect(struct dm_cfg_node *b1,
-			    struct dm_cfg_node *b2);
+struct dm_cfg_node*	dm_intersect(struct dm_cfg_node *b1, struct dm_cfg_node *b2);
 void			dm_dom(struct dm_cfg_node *cfg);
 void			dm_dom_frontiers();
 void			dm_dom_frontiers_free();

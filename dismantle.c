@@ -20,11 +20,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#ifdef DM_CLOSED
-	#include "dm_closed.h"
-#else
-	#include "dm_open.h"
-#endif
+#include "dismantle.h"
 
 uint8_t				 colours_on = 1;
 
@@ -208,7 +204,7 @@ clean:
 	if (fseek(file_info.fptr, orig_pos, SEEK_SET))
 		perror("fseek");
 
-	return (DM_OK);
+	return ret;
 }
 
 
@@ -234,7 +230,8 @@ dm_parse_cmd(char *line)
 	char			*toks[DM_CMD_MAX_TOKS];
 	struct dm_cmd_sw	*cmd = dm_cmds;
 
-	while ((found_toks < DM_CMD_MAX_TOKS) && (tok = strsep(&next, " "))) {
+	toks[found_toks++] = strtok(next, " ");
+	while ((found_toks < DM_CMD_MAX_TOKS) && (tok = strtok(NULL, " "))) {
 		toks[found_toks++] = tok;
 	}
 
@@ -276,9 +273,13 @@ dm_interp()
 	printf("\n");
 }
 
+char *fname;
+
 int
 dm_open_file(char *path)
 {
+	char *fname2;
+
 	memset(&file_info, 0, sizeof(file_info));
 	file_info.bits = 64; /* we guess */
 	file_info.name = path;
@@ -292,6 +293,13 @@ dm_open_file(char *path)
 		perror("fstat");
 		return (DM_FAIL);
 	}
+	
+	/* Get filename */
+	fname = strtok(path, "/");
+	while ((fname2 = strtok(NULL, "/")) != NULL) {
+		fname = fname2;
+	}
+	printf("filename: %s\n", fname);
 
 	return (DM_OK);
 }
@@ -485,10 +493,10 @@ dm_setting_add_str(char *name, char *default_val, char *help)
 int
 dm_settings_init()
 {
-	dm_setting_add_int("cfg.verbose", 0,
-	    "Control flow graph verbosity (0=postorder, 1=address, 2=full)");
-	dm_setting_add_int("cfg.fcalls", 0,
-	    "Control flow graph, follow calls? (0=don't, 1=internal, 2=all");
+	dm_setting_add_int("ssa.transform", 1, "SSA: Instruction transforming (1 = default = On, 0 = off");
+	dm_setting_add_int("ssa.flatten", 1, "SSA: Flatten indirect addressing (1 = default = On, 0 = off)");
+	dm_setting_add_int("cfg.verbose", 1, "Control flow graph verbosity (0=postorder, 1=start address, 2=full)");
+	dm_setting_add_int("cfg.fcalls", 1, "Control flow graph, follow calls/jumps? (0=don't, 1=end at 1st branch, 2=all jumps, 3=all local, 4=all");
 	dm_setting_add_str("cfg.outfile", "XXX", "CFG output file");
 	dm_setting_add_str("cfg.gvfile", "XXX", "Graphviz CFG output file");
 	dm_setting_add_int("pref.ansi", -1, "Use ANSI colour terminal");

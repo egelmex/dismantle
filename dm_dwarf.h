@@ -13,9 +13,13 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-#include <libdwarf.h>
-#include <dwarf.h>
+#ifdef __HAIKU__
+	#include <libdwarf/libdwarf.h>
+	#include <libdwarf/dwarf.h>
+#else
+	#include <libdwarf.h>
+	#include <dwarf.h>
+#endif
 
 #include "dm_elf.h"
 #include "tree.h"
@@ -39,6 +43,7 @@ int		dm_dwarf_sym_rb_cmp(struct dm_dwarf_sym_cache_entry *s1,
 int		dm_dwarf_inspect_die(Dwarf_Debug dbg, Dwarf_Die print_me);
 int		dm_parse_dwarf();
 int		dm_clean_dwarf();
+int		dm_cmd_find_nearest_symbol(char **args);
 int		dm_dwarf_find_sym(char *name, struct dm_dwarf_sym_cache_entry **s);
-int		dm_dwarf_find_sym_at_offset(ADDR64 off,
-		    struct dm_dwarf_sym_cache_entry **ent);
+int		dm_dwarf_find_sym_at_offset(ADDR64 off, struct dm_dwarf_sym_cache_entry **ent);
+int		dm_dwarf_find_nearest_sym_to_offset(ADDR64 off, struct dm_dwarf_sym_cache_entry **ent);

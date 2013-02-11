@@ -15,8 +15,6 @@
  */
 
 #include <err.h>
-#include <sysexits.h>
-
 #include <gelf.h>
 
 #include "dm_elf.h"

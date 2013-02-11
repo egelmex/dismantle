@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Ed Robbins <static.void01@gmail.com>
+ * Copyright (c) 2011, Ed Robbins <edd.robbins@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -200,23 +200,24 @@ dm_dom_frontiers_free()
 void
 dm_graph_dom()
 {
-	struct dm_cfg_node *node = NULL;
-	FILE *fp = dm_new_graph("dom.dot");
-	char *itoa1 = NULL, *itoa2 = NULL;
+	struct dm_cfg_node	*node = NULL;
+	FILE			*fp = dm_new_graph("dom.dot");
+	char			*itoa1 = NULL, *itoa2 = NULL;
+	int			 c;
 
 	if (!fp) return;
 
 	for (p = p_head; p != NULL; p = p->next) {
 		node = (struct dm_cfg_node*)(p->ptr);
 
-		asprintf(&itoa1, "%d", node->post);
-		asprintf(&itoa2, "%d\\nstart: " NADDR_FMT "\\nend: "
+		c = asprintf(&itoa1, "%d", node->post);
+		c = asprintf(&itoa2, "%d\\nstart: " NADDR_FMT "\\nend: "
 		    NADDR_FMT, node->post, node->start, node->end);
 		dm_add_label(fp, itoa1, itoa2);
 		free(itoa2);
 
 		if (node != node->idom) {
-			asprintf(&itoa2, "%d", node->idom->post);
+			c = asprintf(&itoa2, "%d", node->idom->post);
 			dm_add_edge(fp, itoa2, itoa1);
 			free(itoa2);
 		}
@@ -225,6 +226,7 @@ dm_graph_dom()
 	}
 	dm_end_graph(fp);
 	dm_display_graph("dom.dot");
+	(void)c;
 }
 
 /*void

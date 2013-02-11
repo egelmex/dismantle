@@ -39,8 +39,13 @@
 #include <stdio.h>
 #include <errno.h>
 
+#ifdef __HAIKU__
+#include <libdwarf/libdwarf.h>
+#include <libdwarf/dwarf.h>
+#else
 #include <libdwarf.h>
 #include <dwarf.h>
+#endif
 
 #include "tree.h"
 #include "dm_dwarf.h"
@@ -273,7 +278,8 @@ clean:
 	if (name)
 		dwarf_dealloc(dbg,name,DW_DLA_STRING);
 
-	return (DM_OK);
+	ret = DM_OK;
+	return ret;
 }
 
 int
@@ -320,7 +326,43 @@ dm_dwarf_find_sym_at_offset(ADDR64 off, struct dm_dwarf_sym_cache_entry **ent)
 			return (DM_OK);
 		}
 	}
-
 	return (DM_FAIL);
+}
 
+int
+dm_cmd_find_nearest_symbol(char **args)
+{
+	NADDR addr = strtoll(args[0], NULL, 0);
+	struct dm_dwarf_sym_cache_entry *ent;
+
+	dm_dwarf_find_nearest_sym_to_offset(addr, &ent);
+	printf("Find nearest symbol to " NADDR_FMT ": %s\n", addr, ent->name);
+
+	return (DM_OK);
+}
+
+int
+dm_dwarf_find_nearest_sym_to_offset(ADDR64 off, struct dm_dwarf_sym_cache_entry **ent)
+{
+	struct dm_dwarf_sym_cache_entry	*e, *l = NULL;
+	NADDR				 lowest, prev_lowest;
+	int				 first = 1;
+
+	/* rbtree is keyed by symname, so we must iterate */
+	RB_FOREACH(e, dm_dwarf_sym_cache_, &dm_dwarf_sym_cache) {
+		lowest = off - e->offset;
+		if (first) {
+			prev_lowest = lowest;
+			l = e;
+			first = 0;
+		}
+		else {
+			if (lowest < prev_lowest) {
+				prev_lowest = lowest;
+				l = e;
+			}
+		}
+	}
+	*ent = l;
+	return (DM_OK);
 }

@@ -109,7 +109,6 @@ dm_disasm_op(NADDR addr)
 		/* if the target was a symbol we know, then say so */
 		if (dm_dwarf_find_sym_at_offset(target, &sym) == DM_OK) {
 			printf("\t(%s)", sym->name);
-
 		}
 	}
 
@@ -162,16 +161,19 @@ int
 dm_cmd_dis_noargs(char **args)
 {
 	(void) args;
-
 	char	*arg ="8";
 
 	dm_cmd_dis(&arg);
 	return (0);
 }
 
+extern const char* ud_reg_tab[];
+
 NADDR
 dm_get_jump_target(struct ud ud)
 {
+	//printf("Jump to address " NADDR_FMT ". Index register: %s. Base register: %s\n", 
+		//dm_get_operand_lval(ud, 0, 0, 1), ud_reg_tab[ud.operand[0].index], ud_reg_tab[ud.operand[0].base]);
 	return dm_get_operand_lval(ud, 0, 0, 1);
 }
 
@@ -179,7 +181,7 @@ dm_get_jump_target(struct ud ud)
 NADDR
 dm_get_operand_lval(struct ud ud, int op, int offset, int chkfar)
 {
-	NADDR	target;
+	NADDR	target = 0;
 	int	switch_target = 0;
 	if (offset)
 		switch_target = ud.operand[op].offset;
