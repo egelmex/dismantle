@@ -37,8 +37,10 @@ Commands:
 		nsym			Find nearest symbol to address
 		findbranch [address]	Search for branches with 'address' as target
 	Advanced
-		cfg			Recover & display control flow graph & call graph starting from current address
-		dom			Calculate dominance tree and frontiers of cur func, display tree
+		cfg			Recover & display control flow graph
+					starting from current address
+		dom			Calculate dominance tree and frontiers of
+					current func, display tree
 		ssa			Disassemble in SSA form
 
 Settings
@@ -48,15 +50,20 @@ Settings
 		pref.ansi	Use ANSI colour terminal
 	CFG
 		cfg.fcalls	Follow calls/jumps? 
-				0 = ignore all branch instructions
-				1 = stop at 1st branch instruction
-				2 = follow all local jumps
-				3 = follow all local jumps and calls (recover Call Graph as well as CFG)
-				4 = follow all jumps and calls, local or otherwise (except indirect)
-		cfg.verbose	Control flow graph verbosity - controls what will be printed in graph nodes
+					0 = ignore all branch instructions
+					1 = stop at 1st branch instruction
+					2 = follow all local jumps
+					3 = follow all local jumps and calls
+					    (recover Call Graph as well as CFG)
+					4 = follow all jumps and calls, local or
+					    otherwise (except indirect)
+		cfg.verbose	Control flow graph verbosity - controls
+				what will be printed in graph nodes
 					0 = postorder number of node
 					1 = start address
 					2 = full instruction listing
 	SSA
-		ssa.flatten	SSA: Flatten indirect addressing (1 = default = On, 0 = off)
-		ssa.transform	SSA: Instruction transforming (e.g. push/pop, jump etc) (1 = default = On, 0 = off)
+		ssa.flatten	SSA: Flatten indirect addressing
+				(1 = default = On, 0 = off)
+		ssa.transform	SSA: Instruction transforming (e.g. push/pop, jump etc)
+				(1 = default = On, 0 = off)
