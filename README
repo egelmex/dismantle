@@ -15,3 +15,48 @@ We just started hacking and this happened. A small binary file browser and
 disassembler (x86/64) with control flow recovery and SSA code output.
 The project is inspired by radare2.
 
+Commands:
+	General
+		info/i			Show file information
+		help/?			Show this help
+		CTRL+D			Exit
+		seek/s addr		Seek to an address
+		debug [level]		Get/set debug level (0-3)
+		set [var] [val]		Show/ammend settings
+		ansii			Get/set ANSII colours setting
+	Disassembler/Hex/ASCII
+		dis/pd [ops]		Disassemble (8 or 'ops' operations)
+		disf/pdf		Disassemble function (up until the next RET)
+		bits [set_to]		Get/set architecture (32 or 64)
+		/ str			Find ASCII string from current pos
+		hex/px [len]		Dump hex (64 or 'len' bytes)
+	Symbols/tables
+		funcs/f			Show functions from dwarf data
+		pht			Show program header table
+		sht			Show section header table
+		nsym			Find nearest symbol to address
+		findbranch [address]	Search for branches with 'address' as target
+	Advanced
+		cfg			Recover & display control flow graph & call graph starting from current address
+		dom			Calculate dominance tree and frontiers of cur func, display tree
+		ssa			Disassemble in SSA form
+
+Settings
+	General
+		dbg.level	Debug level
+		arch.bits	64 or 32 bit architecture
+		pref.ansi	Use ANSI colour terminal
+	CFG
+		cfg.fcalls	Follow calls/jumps? 
+				0 = ignore all branch instructions
+				1 = stop at 1st branch instruction
+				2 = follow all local jumps
+				3 = follow all local jumps and calls (recover Call Graph as well as CFG)
+				4 = follow all jumps and calls, local or otherwise (except indirect)
+		cfg.verbose	Control flow graph verbosity - controls what will be printed in graph nodes
+					0 = postorder number of node
+					1 = start address
+					2 = full instruction listing
+	SSA
+		ssa.flatten	SSA: Flatten indirect addressing (1 = default = On, 0 = off)
+		ssa.transform	SSA: Instruction transforming (e.g. push/pop, jump etc) (1 = default = On, 0 = off)
