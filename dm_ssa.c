@@ -17,6 +17,7 @@
 #include "dm_ssa.h"
 #include "dm_dwarf.h"
 #include "dm_code_transform.h"
+#include "dm_util.h"
 
 void opr_cast(struct ud* u, struct ud_operand* op);
 
@@ -45,10 +46,11 @@ dm_cmd_ssa(char **args)
 {
 	NADDR			 addr = cur_addr;
 	struct dm_cfg_node	*cfg = NULL;
+	char			 message[200];
+	GElf_Shdr		 shdr;
+	unsigned long long int	 size = 0;
+
 	(void) args;
-	char		message[200];
-	GElf_Shdr	shdr;
-	unsigned long long int size = 0;
 
 	/* Initialise structures */
 	dm_init_cfg();
@@ -179,7 +181,7 @@ dm_cmd_find_direct_branch(char **args)
 	NADDR			 addr = strtoll(args[0], NULL, 0);
 	NADDR			 oaddr = cur_addr;
 	struct dm_cfg_node	*cfg = NULL;
-	int i = 0, j = 0, found = 0;
+	int			 i = 0, j = 0, found = 0;
 	(void) args;
 
 	printf("Finding branches to " NADDR_FMT "...\n", addr);
@@ -361,8 +363,8 @@ dm_print_ssa()
 int
 dm_print_block_header(struct dm_cfg_node *node)
 {
-	int length = 0;
-	struct dm_dwarf_sym_cache_entry *sym = NULL;
+	struct dm_dwarf_sym_cache_entry	*sym = NULL;
+	int				 length = 0;
 	if (dm_dwarf_find_sym_at_offset(node->start, &sym) == DM_OK)
 		length += printf("%sBlock %d (%s):\n%s", ANSII_LIGHTBLUE, node->post, sym->name, ANSII_WHITE);
 	else
@@ -373,45 +375,45 @@ dm_print_block_header(struct dm_cfg_node *node)
 int
 dm_print_superphi(struct super_phi *superphi)
 {
-	int length = 0, i = 0, j = 0;
-	char *temp = NULL, *temp2 = NULL;
+	int	 length = 0, i = 0, j = 0;
+	char	*temp = NULL, *temp2 = NULL;
 
 	printf("%s", ANSII_GREEN);
-	length += asprintf(&temp, "%41smov [%s_%d", "", ud_reg_tab[superphi->vars[0] - 1], superphi->index[0]);
+	length += xasprintf(&temp, "%41smov [%s_%d", "", ud_reg_tab[superphi->vars[0] - 1], superphi->index[0]);
 	if (superphi->var_count > 1)
 		for (i = 1; i < superphi->var_count; i++) {
 			temp2 = temp;
-			length += asprintf(&temp, "%s, %s_%d", temp2, ud_reg_tab[superphi->vars[i] - 1], superphi->index[i]);
+			length += xasprintf(&temp, "%s, %s_%d", temp2, ud_reg_tab[superphi->vars[i] - 1], superphi->index[i]);
 			free(temp2);
 		}
 	temp2 = temp;
-	length += asprintf(&temp, "%s], phi([", temp2);
+	length += xasprintf(&temp, "%s], phi([", temp2);
 	free(temp2);
 	for (i = 0; i < superphi->arguments; i++) {
 		temp2 = temp;
-		length += asprintf(&temp, "%s[", temp2);
+		length += xasprintf(&temp, "%s[", temp2);
 		free(temp2);
 		for (j = 0; j < superphi->var_count; j++) {
 			temp2 = temp;
-			length += asprintf(&temp, "%s%s_%d", temp2, ud_reg_tab[superphi->vars[j] - 1], superphi->indexes[j][i]);
+			length += xasprintf(&temp, "%s%s_%d", temp2, ud_reg_tab[superphi->vars[j] - 1], superphi->indexes[j][i]);
 			free(temp2);
 			if (j != superphi->var_count -1) {
 				temp2 = temp;
-				length += asprintf(&temp, "%s, ", temp2);
+				length += xasprintf(&temp, "%s, ", temp2);
 				free(temp2);
 			}
 		}
 		temp2 = temp;
-		length += asprintf(&temp, "%s]", temp2);
+		length += xasprintf(&temp, "%s]", temp2);
 		free(temp2);
 		if (i != superphi->arguments - 1) {
 			temp2 = temp;
-			length += asprintf(&temp, "%s, ", temp2);
+			length += xasprintf(&temp, "%s, ", temp2);
 			free(temp2);
 		}
 	}
 	temp2 = temp;
-	length += asprintf(&temp, "%s)", temp2);
+	length += xasprintf(&temp, "%s)", temp2);
 	free(temp2);
 	printf("%s", temp);
 	free(temp);
@@ -426,42 +428,41 @@ int
 dm_print_phi_function(struct phi_function *phi)
 {
 	int	 i = 0, length = 0, length2 = 0;
-	int	 c, newlines = 0;
+	int	 newlines = 0;
 	char	*temp = NULL, *temp2 = NULL;
 
 	printf("%s", ANSII_GREEN);
 	if (phi->var - 1 < UD_OP_CONST)
-		length2 += asprintf(&temp, "%41smov %s_%d, phi(", "", ud_reg_tab[phi->var - 1], phi->index);
+		length2 += xasprintf(&temp, "%41smov %s_%d, phi(", "", ud_reg_tab[phi->var - 1], phi->index);
 	else
-		length2 += asprintf(&temp, "%41smov var%d_%d, phi(", "", phi->var - (UD_OP_CONST), phi->index);
+		length2 += xasprintf(&temp, "%41smov var%d_%d, phi(", "", phi->var - (UD_OP_CONST), phi->index);
 
 	for (i = 0; i < phi->arguments; i++){
 		temp2 = temp;
 		if (phi->var - 1 < UD_OP_CONST)
-			length2 += asprintf(&temp, "%s%s_%d", temp, ud_reg_tab[phi->var - 1], phi->indexes[i]);
+			length2 += xasprintf(&temp, "%s%s_%d", temp, ud_reg_tab[phi->var - 1], phi->indexes[i]);
 		else
-			length2 += asprintf(&temp, "%svar%d_%d", temp, phi->var - (UD_OP_CONST), phi->indexes[i]);
+			length2 += xasprintf(&temp, "%svar%d_%d", temp, phi->var - (UD_OP_CONST), phi->indexes[i]);
 		free(temp2);
 		if (i != phi->arguments - 1) {
 			temp2 = temp;
-			length2 += asprintf(&temp, "%s, ", temp);
+			length2 += xasprintf(&temp, "%s, ", temp);
 			free(temp2);
 			if (length2 > 200) {
 				printf("%-81s\n", temp);
 				free(temp);
-				c = asprintf(&temp, "%43s", "");
+				xasprintf(&temp, "%43s", "");
 				length2 = 0;
 				newlines++;
 			}
 		}
 	}
 	temp2 = temp;
-	c = asprintf(&temp, "%s)", temp);
+	xasprintf(&temp, "%s)", temp);
 	free(temp2);
 	length += printf("%-81s", temp);
 	printf(ANSII_WHITE);
 	free(temp);
-	(void)c;
 	return newlines;
 }
 
@@ -481,7 +482,7 @@ dm_phi_remove_duplicates(struct phi_function *phi)
 			if ((phi->indexes[i] == phi->indexes[j]) && (i != j) && (j > i))
 				duplicate = 1;
 		if (!duplicate) {
-			indexes = realloc(indexes, ++arguments * sizeof(int));
+			indexes = xrealloc(indexes, ++arguments * sizeof(int));
 			indexes[arguments - 1] = phi->indexes[i];
 		}
 	}
@@ -501,16 +502,16 @@ dm_amalgamate_phis()
 	for (p_iter = p_head; p_iter != NULL; p_iter = p_iter->next) {
 		node = (struct dm_cfg_node*) p_iter->ptr;
 		if (node->pf_count) {
-			superphi = malloc(sizeof(struct super_phi));
-			superphi->vars = malloc(node->pf_count * sizeof(int));
+			superphi = xmalloc(sizeof(struct super_phi));
+			superphi->vars = xmalloc(node->pf_count * sizeof(int));
 			superphi->var_count = node->pf_count;
 			superphi->arguments = node->phi_functions[0].arguments;
 
-			superphi->index = malloc(superphi->var_count * sizeof(int));
-			superphi->indexes = malloc(superphi->var_count * sizeof(int*));
+			superphi->index = xmalloc(superphi->var_count * sizeof(int));
+			superphi->indexes = xmalloc(superphi->var_count * sizeof(int*));
 
 			for (i = 0; i < superphi->var_count; i++) {
-				superphi->indexes[i] = malloc(superphi->arguments * sizeof(int));
+				superphi->indexes[i] = xmalloc(superphi->arguments * sizeof(int));
 				superphi->index[i] = node->phi_functions[i].index;
 				superphi->vars[i] = node->phi_functions[i].var;
 				for (j = 0; j < superphi->arguments; j++) {
@@ -533,7 +534,6 @@ dm_print_ssa_instruction(struct instruction *insn)
 	NADDR				 addr = 0;
 	char				*hex = NULL, *temp = NULL;
 	int				 colour_set = 0, length = 0;
-	int				 c;
 
 	/* Translate into ssa assembler */
 	dm_translate_intel_ssa(insn);
@@ -567,13 +567,13 @@ dm_print_ssa_instruction(struct instruction *insn)
 
 	if ((instructions[insn->ud.mnemonic].jump) &&
 	    (found_node = dm_find_cfg_node_starting(addr))) {
-		c = asprintf(&temp, "%s (Block %d)", insn->ud.insn_buffer, found_node->post);
+		xasprintf(&temp, "%s (Block %d)", insn->ud.insn_buffer, found_node->post);
 		length += printf(": %-25s%-40s  ", hex, temp);
 		free(temp);
 	}
 	else if ((insn->ud.mnemonic == UD_Icall) &&
 	    (dm_dwarf_find_sym_at_offset(addr, &sym) == DM_OK)) {
-		c = asprintf(&temp, "%s (%s)", insn->ud.insn_buffer, sym->name);
+		xasprintf(&temp, "%s (%s)", insn->ud.insn_buffer, sym->name);
 		length += printf(": %-25s%-40s  ", hex, temp);
 		free(temp);
 	}
@@ -585,7 +585,6 @@ dm_print_ssa_instruction(struct instruction *insn)
 		printf(ANSII_WHITE);
 		colour_set = 0;
 	}
-	(void)c;
 	return 0;
 }
 
@@ -1010,7 +1009,7 @@ dm_place_phi_functions()
 		}
 		/* Build a worklist W of all nodes that define this var */
 		free(W);
-		W = malloc(indices[i].dn_count * sizeof(void*));
+		W = xmalloc(indices[i].dn_count * sizeof(void*));
 		for (j = 0; j < indices[i].dn_count; j++) {
 			indices[i].def_nodes[j]->added = 1;
 			W[j] = indices[i].def_nodes[j];
@@ -1021,26 +1020,26 @@ dm_place_phi_functions()
 		while (w_size) {
 			/* Remove a node n from worklist */
 			n = W[w_size - 1];
-			W = realloc(W, --w_size * sizeof(void*));
+			W = xrealloc(W, --w_size * sizeof(void*));
 			/* For each node dn in DF of n */
 			for (j = 0; j < n->df_count; j++) {
 				dn = (struct dm_cfg_node*)n->df_set[j];
 				/* Note in variable i that i has a phi in node dn */
 				if (!dn->phi_inserted) {
-					indices[i].phi_nodes = realloc(indices[i].phi_nodes, ++indices[i].pn_count * sizeof(void*));
+					indices[i].phi_nodes = xrealloc(indices[i].phi_nodes, ++indices[i].pn_count * sizeof(void*));
 					indices[i].phi_nodes[indices[i].pn_count -1] = dn;
 					dn->phi_inserted = 1;
-					dn->phi_functions = realloc(dn->phi_functions, ++dn->pf_count * sizeof(struct phi_function));
+					dn->phi_functions = xrealloc(dn->phi_functions, ++dn->pf_count * sizeof(struct phi_function));
 					dn->phi_functions[dn->pf_count - 1].var = i;
 					dn->phi_functions[dn->pf_count - 1].arguments = dn->p_count;
-					dn->phi_functions[dn->pf_count - 1].indexes = malloc(dn->p_count * sizeof(int));
+					dn->phi_functions[dn->pf_count - 1].indexes = xmalloc(dn->p_count * sizeof(int));
 					dn->phi_functions[dn->pf_count - 1].index = 0;
 					dn->phi_functions[dn->pf_count - 1].constraints = NULL;
 					dn->phi_functions[dn->pf_count - 1].c_counts = NULL;
 					dn->phi_functions[dn->pf_count - 1].d_count = 0;
 					/* Add dn to worklist */
 					if (!dn->added) {
-						W = realloc(W, ++w_size * sizeof(void*));
+						W = xrealloc(W, ++w_size * sizeof(void*));
 						W[w_size - 1] = dn;
 					}
 				}
@@ -1131,13 +1130,13 @@ dm_ssa_find_var_defs()
 
 void
 dm_add_node_to_var_defs(int reg, struct dm_cfg_node *n) {
-	indices[reg].def_nodes = realloc(indices[reg].def_nodes, ++indices[reg].dn_count * sizeof(void*));
+	indices[reg].def_nodes = xrealloc(indices[reg].def_nodes, ++indices[reg].dn_count * sizeof(void*));
 	indices[reg].def_nodes[indices[reg].dn_count -1] = n;
 }
 
 void
 dm_add_reg_to_node_defs(struct dm_cfg_node *n, int reg) {
-	n->def_vars = realloc(n->def_vars, ++n->dv_count * sizeof(int));
+	n->def_vars = xrealloc(n->def_vars, ++n->dv_count * sizeof(int));
 	n->def_vars[n->dv_count -1] = reg;
 }
 
@@ -1147,7 +1146,7 @@ dm_add_reg_to_node_defs(struct dm_cfg_node *n, int reg) {
 void
 dm_ssa_index_stack_push(int reg, int i)
 {
-	indices[reg].stack = realloc(indices[reg].stack, (++indices[reg].s_size) * sizeof(int));
+	indices[reg].stack = xrealloc(indices[reg].stack, (++indices[reg].s_size) * sizeof(int));
 	indices[reg].stack[indices[reg].s_size - 1] = i;
 }
 
@@ -1165,7 +1164,7 @@ dm_ssa_index_stack_pop(int reg)
 		return -1;
 	}
 	int i = indices[reg].stack[indices[reg].s_size - 1];
-	indices[reg].stack = realloc(indices[reg].stack, (--indices[reg].s_size) * sizeof(int));
+	indices[reg].stack = xrealloc(indices[reg].stack, (--indices[reg].s_size) * sizeof(int));
 	return i;
 }
 
@@ -1177,13 +1176,13 @@ dm_ssa_index_init()
 {
 	int	i;
 
-	indices = malloc(sizeof(struct dm_ssa_index) * (UD_OP_CONST + 1 + variables_count));
+	indices = xmalloc(sizeof(struct dm_ssa_index) * (UD_OP_CONST + 1 + variables_count));
 
 	/* Initialise struct for SSA indexes */
 	for (i = 0; i < UD_OP_CONST + 1 + variables_count; i++) {
 		indices[i].reg = i;
 		indices[i].count = 0;
-		indices[i].stack = malloc(sizeof(int));
+		indices[i].stack = xmalloc(sizeof(int));
 		indices[i].stack[0] = 0;
 		indices[i].s_size = 1;
 		indices[i].def_nodes = NULL;

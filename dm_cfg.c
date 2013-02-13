@@ -57,13 +57,11 @@ int
 dm_cmd_cfg(char **args) {
 	struct dm_cfg_node		*cfg = NULL;
 	struct dm_dwarf_sym_cache_entry	*ent = NULL;
-	int c;
 
 	(void) args;
 
 	dm_dwarf_find_nearest_sym_to_offset(cur_addr, &ent);
-	c = asprintf(&sym_name, "%s", ent->name);
-	(void)c;
+	xasprintf(&sym_name, "%s", ent->name);
 
 	/* Initialise structures */
 	dm_init_cfg();
@@ -103,14 +101,14 @@ dm_recover_cfg() {
 
 	/* Create first node */
 	cfg = dm_new_cfg_node(addr, 0);
-	cfg->function_return = malloc(sizeof(void*));
+	cfg->function_return = xmalloc(sizeof(void*));
 	(*cfg->function_return) = NULL;
 
 	/* Create CFG */
 	dm_gen_cfg_block(cfg, cfg, cfg->function_return);
 
 	/* Get reverse postorder, preorder and postorder of nodes */
-        rpost = calloc(p_length, sizeof(void*));
+        rpost = xcalloc(p_length, sizeof(void*));
         dm_depth_first_walk(cfg);
 
 	/* Rewind back */
@@ -163,7 +161,6 @@ dm_init_cfg()
 	struct	dm_setting	*fcalls = NULL;
 	char			*fcallmessage;
 	struct  dm_setting	*set_transform = NULL, *set_flatten = NULL, *cfg_verbosity = NULL;
-	int			 c;
 
 	/* Get flatten/transform settings */
 	dm_find_setting("ssa.transform", &set_transform);
@@ -180,26 +177,24 @@ dm_init_cfg()
 	fcalls_i = fcalls->val.ival;
 	switch (fcalls_i) {
 		case 4:
-			c = asprintf(&fcallmessage, "(fcalls = 4) complete cfg/cg reconstruction, flow trigger followed all reachable branches");
+			xasprintf(&fcallmessage, "(fcalls = 4) complete cfg/cg reconstruction, flow trigger followed all reachable branches");
 			break;
 		case 3:
-			c = asprintf(&fcallmessage, "(fcalls = 3) cfg/cg reconstruction, flow trigger followed all local (.text) branches");
+			xasprintf(&fcallmessage, "(fcalls = 3) cfg/cg reconstruction, flow trigger followed all local (.text) branches");
 			break;
 		case 2:
-			c = asprintf(&fcallmessage, "(fcalls = 2) function cfg reconstruction, flow trigger followed all local jumps");
+			xasprintf(&fcallmessage, "(fcalls = 2) function cfg reconstruction, flow trigger followed all local jumps");
 			break;
 		case 1:
-			c = asprintf(&fcallmessage, "(fcalls = 1) single block reconstruction, flow trigger stopped at first branch");
+			xasprintf(&fcallmessage, "(fcalls = 1) single block reconstruction, flow trigger stopped at first branch");
 			break;
 		case 0:
-			c = asprintf(&fcallmessage, "(fcalls = 0) function block recovery, flow trigger ignored all branches and halted at ret");
+			xasprintf(&fcallmessage, "(fcalls = 0) function block recovery, flow trigger ignored all branches and halted at ret");
 			break;
 	}
 	dm_new_post_message(fcallmessage);
 
 	dm_instruction_se_init();
-
-	(void)c;
 }
 
 void
@@ -219,7 +214,7 @@ dm_instruction_se_init()
 	/* XXX store in linked list (queue.h) */
 	int c;
 
-	instructions = malloc(sizeof(struct dm_instruction_se) * (DM_UD_ENUM_HACK));
+	instructions = xmalloc(sizeof(struct dm_instruction_se) * (DM_UD_ENUM_HACK));
 	/* Initialise struct recording which instructions write to registers */
 	for (c = 0; c < DM_UD_ENUM_HACK; c++) {
 		instructions[c].instruction = c;
@@ -485,10 +480,10 @@ dm_new_cfg_node(NADDR nstart, NADDR nend)
 {
 	struct dm_cfg_node		*node;
 
-	node = malloc(sizeof(struct dm_cfg_node));
+	node = xmalloc(sizeof(struct dm_cfg_node));
 	node->start = nstart;
 	node->end = nend;
-	node->children = NULL;//calloc(1, sizeof(void*));
+	node->children = NULL;
 	node->c_count = 0;
 	node->parents = NULL;
 	node->p_count = 0;
@@ -516,12 +511,12 @@ dm_new_cfg_node(NADDR nstart, NADDR nend)
 	node->superphi = NULL;
 	/* Add node to the free list so we can free the memory at the end */
 	if (p) {
-		p->next = calloc(1, sizeof(struct ptrs));
+		p->next = xcalloc(1, sizeof(struct ptrs));
 		p = p->next;
 		p->ptr = (void*)node;
 	}
 	else {
-		p = calloc(1, sizeof(struct ptrs));
+		p = xcalloc(1, sizeof(struct ptrs));
 		p->ptr = (void*)node;
 		p_head = p;
 	}
@@ -533,14 +528,14 @@ dm_new_cfg_node(NADDR nstart, NADDR nend)
 void
 dm_add_parent(struct dm_cfg_node *node, struct dm_cfg_node *parent)
 {
-	node->parents = realloc(node->parents, ++(node->p_count) * sizeof(void*));
+	node->parents = xrealloc(node->parents, ++(node->p_count) * sizeof(void*));
 	node->parents[node->p_count - 1] = parent;
 }
 
 void
 dm_add_child(struct dm_cfg_node *node, struct dm_cfg_node *child)
 {
-	node->children = realloc(node->children, ++(node->c_count) * sizeof(void*));
+	node->children = xrealloc(node->children, ++(node->c_count) * sizeof(void*));
 	node->children[node->c_count - 1] = child;
 }
 
@@ -558,7 +553,7 @@ dm_add_return_node(struct dm_cfg_node *node, struct dm_cfg_node *return_node)
 		printf("Tried to add recursive caller with NULL function head!\n");
 		return;
 	}
-	function_head->return_nodes = realloc(function_head->return_nodes, ++(function_head->rn_count) * sizeof(void*));
+	function_head->return_nodes = xrealloc(function_head->return_nodes, ++(function_head->rn_count) * sizeof(void*));
 	function_head->return_nodes[function_head->rn_count - 1] = return_node;
 }
 
@@ -571,7 +566,7 @@ dm_add_node_to_function(struct dm_cfg_node *func, struct dm_cfg_node *node)
 	else
 		function_head = func->function_head;
 
-	function_head->function_nodes = realloc(function_head->function_nodes, ++(function_head->fn_count) * sizeof(void*));
+	function_head->function_nodes = xrealloc(function_head->function_nodes, ++(function_head->fn_count) * sizeof(void*));
 	function_head->function_nodes[function_head->fn_count - 1] = node;
 }
 
@@ -591,11 +586,9 @@ dm_print_post_messages()
 void
 dm_new_post_message(char *message)
 {
-	int c;
 	npm++;
-	post_messages = realloc(post_messages, npm * sizeof(void*));
-	c = asprintf(&post_messages[npm - 1], "%s\n", message);
-	(void)c;
+	post_messages = xrealloc(post_messages, npm * sizeof(void*));
+	xasprintf(&post_messages[npm - 1], "%s\n", message);
 }
 
 void
@@ -652,7 +645,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node, struct dm_cfg_node *function_head, st
 			//printf("Ran into the start of existing block at address " NADDR_FMT "!\n", addr);
 			addr -= oldRead;
 			/*free(node->children);
-			node->children = calloc(2, sizeof(void*));
+			node->children = xcalloc(2, sizeof(void*));
 			node->children[0] = foundNode;
 			node->c_count = 1;*/
 			dm_add_child(node, foundNode);
@@ -681,7 +674,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node, struct dm_cfg_node *function_head, st
 					sprintf(pm, "Branch to address outside of .text (" NADDR_FMT ") at " NADDR_FMT, target, addr);
 				dm_new_post_message(pm);
 				iBranchesCount++;
-				iBranches = realloc(iBranches, iBranchesCount * sizeof(struct indirect_branch));
+				iBranches = xrealloc(iBranches, iBranchesCount * sizeof(struct indirect_branch));
 				iBranches[iBranchesCount - 1].address = addr;
 				iBranches[iBranchesCount - 1].insn = NULL;
 				iBranches[iBranchesCount - 1].node = node;
@@ -692,7 +685,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node, struct dm_cfg_node *function_head, st
 
 			if (!ud.operand[0].index) {
 				branchesCount++;
-				branches = realloc(branches, branchesCount * sizeof(struct branch));
+				branches = xrealloc(branches, branchesCount * sizeof(struct branch));
 				branches[branchesCount - 1].addr = addr;
 				branches[branchesCount - 1].target = target;
 				branches[branchesCount - 1].insn = NULL;
@@ -725,7 +718,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node, struct dm_cfg_node *function_head, st
 			//free(node->children);
 
 			/* Make space for the children of this block */
-			//node->children = calloc(instructions[ud.mnemonic].jump
+			//node->children = xcalloc(instructions[ud.mnemonic].jump
 			//    + 1, sizeof(void*));
 			//node->c_count = instructions[ud.mnemonic].jump;
 
@@ -773,7 +766,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node, struct dm_cfg_node *function_head, st
 				//node->children[0] = foundNode;
 				dm_add_parent(child, node);
 				if (call) {
-					child->function_return = malloc(sizeof(void*));
+					child->function_return = xmalloc(sizeof(void*));
 					(*child->function_return) = NULL;
 					dm_gen_cfg_block(child, child, child->function_return);
 				}
@@ -802,7 +795,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node, struct dm_cfg_node *function_head, st
 					foundNode->function_head = foundNode;
 					foundNode->is_function_head = 1;
 					foundNode->is_function_return = 1;
-					foundNode->function_return = malloc(sizeof(void*));
+					foundNode->function_return = xmalloc(sizeof(void*));
 					*(foundNode->function_return) = foundNode;
 				}
 
@@ -836,7 +829,7 @@ dm_gen_cfg_block(struct dm_cfg_node *node, struct dm_cfg_node *function_head, st
 				foundNode = dm_find_cfg_node_ending(addr);
 				if (foundNode != NULL) {
 					/*if (instructions[ud.mnemonic].jump > 1) {
-						node->children = realloc(node->children, 2*sizeof(void*));
+						node->children = xrealloc(node->children, 2*sizeof(void*));
 						node->children[1] = NULL;
 						node->c_count = 1;
 					}*/
@@ -1051,7 +1044,7 @@ dm_split_cfg_block(struct dm_cfg_node *node, NADDR addr)
 	node->end = addr2;
 
 	/* Head has only one child - the tail node */
-	/*node->children = calloc(2, sizeof(void*));
+	/*node->children = xcalloc(2, sizeof(void*));
 	node->children[0] = tail;
 	node->c_count = 1;*/
 	node->children = NULL;
@@ -1249,28 +1242,27 @@ dm_graph_cg()
 	struct dm_cfg_node		*node = NULL;
 	FILE				*fp = dm_new_graph("cg.dot");
 	char				*itoa1 = NULL, *itoa2 = NULL;
-	int				 c;
 
 	if (!fp) return;
 
-	c = asprintf(&itoa1, "CG of %s, starting from %s", fname, sym_name);
+	xasprintf(&itoa1, "CG of %s, starting from %s", fname, sym_name);
 	dm_start_subgraph(fp, "CG", itoa1);
 	free(itoa1);
 
 	for (p = p_head; p != NULL; p = p->next) {
 		node = (struct dm_cfg_node*)(p->ptr);
 		if (node->is_function_head) {
-			c = asprintf(&itoa1, "%d", node->post);
+			xasprintf(&itoa1, "%d", node->post);
 			if (node->nonlocal) {
 				dm_colour_label(fp, itoa1, "red");
 			}
 			else if (dm_dwarf_find_sym_at_offset(node->start, &sym) == DM_OK) {
-				c = asprintf(&itoa2, "%d (%s)\\nstart: " NADDR_FMT "\\nend: " NADDR_FMT, node->post, sym->name, node->start, node->end);
+				xasprintf(&itoa2, "%d (%s)\\nstart: " NADDR_FMT "\\nend: " NADDR_FMT, node->post, sym->name, node->start, node->end);
 				dm_add_label(fp, itoa1, itoa2);
 				free(itoa2);
 			}
 			else {
-				c = asprintf(&itoa2, "%d\\nstart: " NADDR_FMT "\\nend: " NADDR_FMT, node->post, node->start, node->end);
+				xasprintf(&itoa2, "%d\\nstart: " NADDR_FMT "\\nend: " NADDR_FMT, node->post, node->start, node->end);
 				dm_add_label(fp, itoa1, itoa2);
 				free(itoa2);
 			}
@@ -1281,19 +1273,18 @@ dm_graph_cg()
 	dm_end_subgraph(fp);
 	dm_end_graph(fp);
 	dm_display_graph("cg.dot");
-	(void)c;
 }
 
 void
 dm_graph_cg_aux(struct dm_cfg_node *node, FILE *fp)
 {
 	char	*itoa1 = NULL, *itoa2 = NULL;
-	int	 c, i = 0;
+	int	 i = 0;
 
-	c = asprintf(&itoa1, "%d", node->function_head->post);
+	xasprintf(&itoa1, "%d", node->function_head->post);
 	for (; i < node->c_count; i++) {
 		if (node->children[i]->function_head != node->function_head) {
-			c = asprintf(&itoa2, "%d", node->children[i]->function_head->post);
+			xasprintf(&itoa2, "%d", node->children[i]->function_head->post);
 			dm_add_edge(fp, itoa1, itoa2);
 			free(itoa2);
 		}
@@ -1301,7 +1292,6 @@ dm_graph_cg_aux(struct dm_cfg_node *node, FILE *fp)
 			dm_add_edge(fp, itoa1, itoa1);
 	}
 	free(itoa1);
-	(void)c;
 }
 
 
@@ -1312,11 +1302,11 @@ dm_graph_cfg()
         struct dm_cfg_node		*node = NULL, *child = NULL;
         FILE				*fp = dm_new_graph("cfg.dot");
         char				*itoa1 = NULL, *itoa2 = NULL, *itoa3 = NULL;
-        int				 c = 0, i = 0;
+        int				 i = 0;
 
 	if (!fp) return;
 
-	c = asprintf(&itoa1, "CFG of %s, starting from %s", fname, sym_name);
+	xasprintf(&itoa1, "CFG of %s, starting from %s", fname, sym_name);
 
 	dm_start_subgraph(fp, "CFG", itoa1);
 	free(itoa1);
@@ -1324,36 +1314,36 @@ dm_graph_cfg()
 	for (p = p_head; p != NULL; p = p->next) {
 		node = (struct dm_cfg_node*)(p->ptr);
 		if (node->nonlocal) {
-			c = asprintf(&itoa1, "%d", node->post);
+			xasprintf(&itoa1, "%d", node->post);
 			dm_colour_label(fp, itoa1, "red");
 			free(itoa1);
 		}
 		else if (node->is_function_head) {
-			c = asprintf(&itoa1, "%d", node->post);
+			xasprintf(&itoa1, "%d", node->post);
 			if (dm_dwarf_find_sym_at_offset(node->start, &sym) == DM_OK) {
 				dm_start_subgraph(fp, sym->name, sym->name);
 				dm_colour_label(fp, itoa1, "green");
 				if (verbosity == 2) {
 					itoa3 = dm_disassemble_node(node);
-					c = asprintf(&itoa2, "%d \\nstart: " NADDR_FMT "\\n%s", node->post, node->start, itoa3);
+					xasprintf(&itoa2, "%d \\nstart: " NADDR_FMT "\\n%s", node->post, node->start, itoa3);
 					free(itoa3);
 				}
 				else
-					c = asprintf(&itoa2, "%d \\nstart: " NADDR_FMT, node->post, node->start);
+					xasprintf(&itoa2, "%d \\nstart: " NADDR_FMT, node->post, node->start);
 				dm_add_label(fp, itoa1, itoa2);
 				free(itoa2);
 			}
 			else {
-				c = asprintf(&itoa2, NADDR_FMT, node->start);
+				xasprintf(&itoa2, NADDR_FMT, node->start);
 				dm_start_subgraph(fp, itoa2, itoa2);
 				free(itoa2);
 				if (verbosity == 2) {
 					itoa3 = dm_disassemble_node(node);
-					c = asprintf(&itoa2, "%d\\nstart: " NADDR_FMT "\\n%s", node->post, node->start, itoa3);
+					xasprintf(&itoa2, "%d\\nstart: " NADDR_FMT "\\n%s", node->post, node->start, itoa3);
 					free(itoa3);
 				}
 				else
-					c = asprintf(&itoa2, "%d\\nstart: " NADDR_FMT, node->post, node->start);
+					xasprintf(&itoa2, "%d\\nstart: " NADDR_FMT, node->post, node->start);
 				dm_colour_label(fp, itoa1, "green");
 				dm_add_label(fp, itoa1, itoa2);
 				free(itoa2);
@@ -1361,27 +1351,27 @@ dm_graph_cfg()
 			free(itoa1);
 			for (i = 0; i < node->fn_count; i++) {
 				child = node->function_nodes[i];
-				c = asprintf(&itoa1, "%d", child->post);
+				xasprintf(&itoa1, "%d", child->post);
 				if (child->is_function_return) {
 					if (verbosity == 2) {
 						itoa3 = dm_disassemble_node(child);
-						c = asprintf(&itoa2, "%d: " NADDR_FMT "\\nend: " NADDR_FMT "\\n%s", child->post, child->start, child->end, itoa3);
+						xasprintf(&itoa2, "%d: " NADDR_FMT "\\nend: " NADDR_FMT "\\n%s", child->post, child->start, child->end, itoa3);
 						free(itoa3);
 					}
 					else
-						c = asprintf(&itoa2, "%d: " NADDR_FMT "\\nend: " NADDR_FMT, child->post, child->start, child->end);
+						xasprintf(&itoa2, "%d: " NADDR_FMT "\\nend: " NADDR_FMT, child->post, child->start, child->end);
 					dm_add_label(fp, itoa1, itoa2);
 					dm_colour_label(fp, itoa1, "lightpink");
 					free(itoa2);
 				}
 				else if (verbosity == 1) {
-					c = asprintf(&itoa2, "%d: " NADDR_FMT, child->post, child->start);
+					xasprintf(&itoa2, "%d: " NADDR_FMT, child->post, child->start);
 					dm_add_label(fp, itoa1, itoa2);
 					free(itoa2);
 				}
 				else if (verbosity == 2) {
 					itoa3 = dm_disassemble_node(child);
-					c = asprintf(&itoa2, "%d: " NADDR_FMT "\\n%s", child->post, child->start, itoa3);
+					xasprintf(&itoa2, "%d: " NADDR_FMT "\\n%s", child->post, child->start, itoa3);
 					free(itoa3);
 					dm_add_label(fp, itoa1, itoa2);
 					free(itoa2);
@@ -1392,9 +1382,9 @@ dm_graph_cfg()
 			}
 			dm_end_subgraph(fp);
 		}
-		c = asprintf(&itoa1, "%d", node->post);
+		xasprintf(&itoa1, "%d", node->post);
 		for (i = 0; i < node->c_count; i++) {
-			c = asprintf(&itoa2, "%d", node->children[i]->post);
+			xasprintf(&itoa2, "%d", node->children[i]->post);
 			dm_add_edge(fp, itoa1, itoa2);
 			free(itoa2);
 		}
@@ -1423,7 +1413,6 @@ dm_graph_cfg()
 
 	if (fcalls_i > 2)
 		dm_graph_cg();
-	(void)c;
 }
 
 char*
@@ -1431,17 +1420,16 @@ dm_disassemble_node(struct dm_cfg_node *node)
 {
 	NADDR a;
 	char *temp1 = NULL, *temp2 = NULL;
-	int c = 0;
+
 	a = ud.pc;
-	c = asprintf(&temp1, "%s", "");
+	xasprintf(&temp1, "%s", "");
 	for (dm_seek(node->start); ud.pc - ud_insn_len(&ud) < node->end;) {
 		ud_disassemble(&ud);
 		temp2 = temp1;
-		c = asprintf(&temp1, "%s%s\\l", temp1, ud_insn_asm(&ud));
+		xasprintf(&temp1, "%s%s\\l", temp1, ud_insn_asm(&ud));
 		free(temp2);
 	}
 	dm_seek(a);
-	(void)c;
 	return temp1;
 }
 

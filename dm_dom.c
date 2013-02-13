@@ -18,6 +18,7 @@
 #include "dm_dom.h"
 #include "dm_cfg.h"
 #include "dm_gviz.h"
+#include "dm_util.h"
 
 extern struct ptrs *p_head;
 extern struct ptrs *p;
@@ -163,11 +164,8 @@ dm_dom_frontiers()
 					}
 				/* Add node to runners frontier set */
 				if (!duplicate) {
-					runner->df_set = realloc(
-					    runner->df_set,
-					    ++runner->df_count * sizeof(void*));
-					runner->df_set[
-					    runner->df_count - 1] = node;
+					runner->df_set = xrealloc(runner->df_set, ++runner->df_count * sizeof(void*));
+					runner->df_set[runner->df_count - 1] = node;
 				}
 				runner = runner->idom;
 			}
@@ -235,7 +233,7 @@ dm_get_predecessors(struct dm_cfg_node *node, struct ptrs *predecessors)
 	int c = 0;
 	for (; c < node->p_count; c++) {
 		predecessors->ptr = node->parents[c];
-		predecessors->next = calloc(1, sizeof(struct ptrs));
+		predecessors->next = xcalloc(1, sizeof(struct ptrs));
 		predecessors = predecessors->next;
 		dm_get_predecessors(node->parents[c], predecessors);
 	}

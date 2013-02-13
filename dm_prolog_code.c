@@ -19,7 +19,7 @@
 #include "dm_prolog_code.h"
 #include "dm_dwarf.h"
 #include "dm_code_transform.h"
-
+#include "dm_util.h"
 
 extern struct ptrs	*p_head;
 extern struct ptrs	*p;
@@ -40,7 +40,6 @@ int dm_cmd_pc(char **args)
 	struct dm_dwarf_sym_cache_entry	*ent;
 	struct dm_setting		*fcalls = NULL;
 	char				*out, *reach;
-	int				 c;
 
 	(void) args;
 
@@ -50,25 +49,25 @@ int dm_cmd_pc(char **args)
 
 	switch (calls) {
 		case 4:
-			c = asprintf(&reach, "complete_cfg-cg");
+			xasprintf(&reach, "complete_cfg-cg");
 			break;
 		case 3:
-			c = asprintf(&reach, "cfg-cg");
+			xasprintf(&reach, "cfg-cg");
 			break;
 		case 2:
-			c = asprintf(&reach, "function");
+			xasprintf(&reach, "function");
 			break;
 		case 1:
-			c = asprintf(&reach, "singleblock");
+			xasprintf(&reach, "singleblock");
 			break;
 		case 0:
-			c = asprintf(&reach, "functionblock");
+			xasprintf(&reach, "functionblock");
 			break;
 	}
 
 	dm_dwarf_find_nearest_sym_to_offset(addr, &ent);
-	c = asprintf(&symname, "%s", ent->name);
-	c = asprintf(&out, "%s.%s.%s.psc", fname, ent->name, reach);
+	xasprintf(&symname, "%s", ent->name);
+	xasprintf(&out, "%s.%s.%s.psc", fname, ent->name, reach);
 
 	export = fopen(out, "wt");
 	free(out);
@@ -125,7 +124,6 @@ int dm_cmd_pc(char **args)
 	/* Rewind back */
 	dm_seek(addr);
 
-	(void)c;
 	return (0);
 }
 
@@ -305,7 +303,7 @@ dm_export_superphi(struct super_phi *superphi, NADDR addr)
 	int length = 0, i = 0, j = 0;
 	char *temp = NULL, *temp2 = NULL;
 
-	length += asprintf(&temp, "(" NADDR_FMT "  :phi([(%s^%d, %d)",
+	length += xasprintf(&temp, "(" NADDR_FMT "  :phi([(%s^%d, %d)",
 								addr,
 								ud_reg_tab[superphi->vars[0] - 1],
 								superphi->index[0],
@@ -313,7 +311,7 @@ dm_export_superphi(struct super_phi *superphi, NADDR addr)
 	if (superphi->var_count > 1)
 		for (i = 1; i < superphi->var_count; i++) {
 			temp2 = temp;
-			length += asprintf(&temp, "%s, (%s^%d, %d)",
+			length += xasprintf(&temp, "%s, (%s^%d, %d)",
 									temp2,
 									ud_reg_tab[superphi->vars[i] - 1],
 									superphi->index[i],
@@ -323,7 +321,7 @@ dm_export_superphi(struct super_phi *superphi, NADDR addr)
 	for (i = 0; i < superphi->arguments; i++) {
 		for (j = 0; j < superphi->var_count; j++) {
 			temp2 = temp;
-			length += asprintf(&temp, "%s, (%s^%d, %d)",
+			length += xasprintf(&temp, "%s, (%s^%d, %d)",
 									temp2,
 									ud_reg_tab[superphi->vars[j] - 1],
 									superphi->indexes[j][i],
@@ -332,7 +330,7 @@ dm_export_superphi(struct super_phi *superphi, NADDR addr)
 		}
 	}
 	temp2 = temp;
-	length += asprintf(&temp, "%s]), _).", temp2);
+	length += xasprintf(&temp, "%s]), _).", temp2);
 	free(temp2);
 	printf("%s\n", temp);
 	fprintf(export, "%s\n", temp);
@@ -348,14 +346,13 @@ dm_export_prolog_code()
 	NADDR			 addr = 0;
 	int			 index[3][2];
 	int			 i = 0, fv_operand = 0, j = 0;
-	int			 c;
 	char			*filename = NULL;
 
 	node = (struct dm_cfg_node*)p_head->ptr;
 	insn = node->instructions[0];
 	u = &(insn->ud);
 
-	c = asprintf(&filename, "%s", fname);
+	xasprintf(&filename, "%s", fname);
 	while(filename[i] != '\0') {
 		if (filename[i] == '.')
 			filename[i] = '_';
@@ -494,6 +491,5 @@ dm_export_prolog_code()
 			fprintf(export, "]), _).\n");
 		}
 	}
-	(void)c;
 }
 

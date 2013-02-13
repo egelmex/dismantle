@@ -1,6 +1,7 @@
 #include "dm_code_transform.h"
 #include "dm_ssa.h"
 #include "dm_dis.h"
+#include "dm_util.h"
 
 extern struct ptrs              *p_head;
 extern struct ptrs              *p;
@@ -348,7 +349,7 @@ dm_new_pseudo_insn(enum ud_mnemonic_code mnemonic, uint64_t pc, void *op[3], enu
 	struct instruction	*insn = NULL;
 	int i = 0;
 
-	insn = calloc(1, sizeof(struct instruction));
+	insn = xcalloc(1, sizeof(struct instruction));
 	insn->ud.mnemonic = mnemonic;
 	insn->ud.pc = pc;
 	insn->ud.inp_ctr = inp_ctr;
@@ -387,7 +388,7 @@ struct instruction*
 dm_new_insn()
 {
 	struct instruction *insn = NULL;
-	insn = calloc(1, sizeof(struct instruction));
+	insn = xcalloc(1, sizeof(struct instruction));
 	insn->paddr = -1;
 	return insn;
 }
@@ -395,7 +396,7 @@ dm_new_insn()
 void
 dm_add_insn(struct dm_cfg_node *node, struct instruction *insn)
 {
-	node->instructions = realloc(node->instructions, sizeof(void*) * ++node->i_count);
+	node->instructions = xrealloc(node->instructions, sizeof(void*) * ++node->i_count);
 	node->instructions[node->i_count - 1] = insn;
 }
 
@@ -403,16 +404,16 @@ struct variable*
 get_new_free_variable()
 {
 	struct variable *var;
-	var = malloc(sizeof(struct variable));
+	var = xmalloc(sizeof(struct variable));
 	var->index = next_free_variable++;
 	var->ssa_i = 0;
 	if (variables) {
-		variables->next = calloc(1, sizeof(struct ptrs));
+		variables->next = xcalloc(1, sizeof(struct ptrs));
 		variables = variables->next;
 		variables->ptr = (void*)var;
 	}
 	else {
-		variables = calloc(1, sizeof(struct ptrs));
+		variables = xcalloc(1, sizeof(struct ptrs));
 		variables->ptr = (void*)var;
 		variables_head = variables;
 	}
@@ -447,7 +448,7 @@ struct ud_operand
 dm_make_ud_register_operand(enum ud_type reg) {
 	struct ud_operand *op;
 
-	op = calloc(1, sizeof(struct ud_operand));
+	op = xcalloc(1, sizeof(struct ud_operand));
 	op->type = UD_OP_REG;
 	op->base = reg;
 	return *op;
@@ -457,7 +458,7 @@ struct ud_operand
 dm_make_ud_register_mem_operand(enum ud_type reg) {
 	struct ud_operand *op;
 
-	op = calloc(1, sizeof(struct ud_operand));
+	op = xcalloc(1, sizeof(struct ud_operand));
 	op->type = UD_OP_MEM;
 	op->base = reg;
 	return *op;
@@ -466,7 +467,7 @@ dm_make_ud_register_mem_operand(enum ud_type reg) {
 struct ud_operand
 dm_make_ud_literal_operand() {
 	struct ud_operand *op;
-	op = calloc(1, sizeof(struct ud_operand));
+	op = xcalloc(1, sizeof(struct ud_operand));
 	op->type = UD_OP_IMM;
 	return *op;
 }
